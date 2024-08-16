@@ -4,8 +4,17 @@ import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
 
 import {SearchForm, SearchResults, NoSearchResults} from '~/components/Search';
 
-export const meta: MetaFunction = () => {
-  return [{title: `Hydrogen | Search`}];
+export const meta: MetaFunction<typeof loader> = ({location, data}) => {
+
+  const searchQuery = new URLSearchParams(location.search).get('q');
+  const canonicalUrl = data?.canonicalUrl || ''; // Ensure it's a string
+
+
+  return [
+    {title: `Search results for "${searchQuery}"`},
+    {tagName: 'link', rel: 'canonical', href: canonicalUrl},
+    {content: 'width=device-width, initial-scale=1, viewport-fit=cover'}
+  ];
 };
 
 export async function loader({request, context}: LoaderFunctionArgs) {
@@ -13,11 +22,13 @@ export async function loader({request, context}: LoaderFunctionArgs) {
   const searchParams = new URLSearchParams(url.search);
   const variables = getPaginationVariables(request, {pageBy: 8});
   const searchTerm = String(searchParams.get('q') || '');
+  const canonicalUrl = request.url;
 
   if (!searchTerm) {
     return {
       searchResults: {results: null, totalResults: 0},
       searchTerm,
+      canonicalUrl
     };
   }
 
@@ -44,6 +55,7 @@ export async function loader({request, context}: LoaderFunctionArgs) {
   return defer({
     searchTerm,
     searchResults,
+    canonicalUrl
   });
 }
 

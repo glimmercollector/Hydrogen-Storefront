@@ -1,7 +1,38 @@
-import {useLoaderData, Link} from '@remix-run/react';
-import {defer, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {useLoaderData, Link, type MetaFunction} from '@remix-run/react';
+import {
+  defer,
+  HeadersFunction,
+  json,
+  type LoaderFunctionArgs,
+} from '@shopify/remix-oxygen';
 import {Pagination, getPaginationVariables, Image} from '@shopify/hydrogen';
 import type {CollectionFragment} from 'storefrontapi.generated';
+import {
+  getBreadcrumbs,
+  getBreadcrumbsSchemaMarkup,
+  TBreadcrumbType,
+} from '~/utils/breadcrumbs';
+
+
+const breadcrumbType: TBreadcrumbType = 'collections';
+export const handle = {breadcrumbType};
+
+export const meta: MetaFunction<typeof loader> = ({data}) => {
+  const breadcrumbsSchemaMarkup = data?.breadcrumbsSchemaMarkup || {};
+
+  return [
+    {title: 'Collections | Storefront Hydrogen'},
+    {name: 'description', content: `Collections | Storefront Hydrogen `},
+    {tagName: 'link', rel: 'canonical', href: data?.canonicalUrl || ''},
+    {
+      name: 'viewport',
+      content: 'width=device-width, initial-scale=1, viewport-fit=cover',
+    },
+    {
+      'script:ld+json': breadcrumbsSchemaMarkup,
+    },
+  ];
+};
 
 export async function loader(args: LoaderFunctionArgs) {
   // Start fetching non-critical data without blocking time to first byte
@@ -29,7 +60,18 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
     // Add other queries here, so that they are loaded in parallel
   ]);
 
-  return {collections};
+  const url = new URL(request.url);
+  const canonicalUrl = url.href;
+  const baseUrl = `${url.protocol}//${url.host}`;
+  const breadcrumbs = getBreadcrumbs(breadcrumbType, {}, baseUrl);
+  const breadcrumbsSchemaMarkup = getBreadcrumbsSchemaMarkup(breadcrumbs);
+
+  return {
+    collections,
+    canonicalUrl,
+    breadcrumbs,
+    breadcrumbsSchemaMarkup,
+  };
 }
 
 /**

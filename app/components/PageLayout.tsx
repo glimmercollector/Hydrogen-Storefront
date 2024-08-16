@@ -13,6 +13,7 @@ import {
   PredictiveSearchForm,
   PredictiveSearchResults,
 } from '~/components/Search';
+import Breadcrumbs from './Breadcrumbs';
 
 interface PageLayoutProps {
   cart: Promise<CartApiQueryFragment | null>;
@@ -44,6 +45,7 @@ export function PageLayout({
           publicStoreDomain={publicStoreDomain}
         />
       )}
+      <span><Breadcrumbs/></span>
       <main>{children}</main>
       <Footer
         footer={footer}

@@ -12,9 +12,60 @@ import {getVariantUrl} from '~/lib/variants';
 import {ProductPrice} from '~/components/ProductPrice';
 import {ProductImage} from '~/components/ProductImage';
 import {ProductForm} from '~/components/ProductForm';
+import {getBreadcrumbsSchemaMarkup, TBreadcrumbType} from '~/utils/breadcrumbs';
+import {getBreadcrumbs} from '../utils/breadcrumbs';
+import { TWITTER_HANDLE } from '~/constants';
+
+const breadcrumbType: TBreadcrumbType = 'product';
+export const handle = {breadcrumbType};
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
-  return [{title: `Hydrogen | ${data?.product.title ?? ''}`}];
+  const breadcrumbsSchemaMarkup = data?.breadcrumbsSchemaMarkup || {};
+
+  return [
+    {title: `Hydrogen | ${data?.product.title ?? ''}`},
+    {name: 'description', content: data?.product.description},
+    {tagName: 'link', rel: 'canonical', href: data?.canonicalUrl},
+    {
+      name: 'viewport',
+      content: 'width=device-width, initial-scale=1, viewport-fit=cover',
+    },
+    {tagName: 'link', rel: 'canonical', href: data?.canonicalUrl},
+    {property: 'og:title', content: data?.product.title},
+    {property: 'og:description', content: data?.product.description},
+    {
+      property: 'og: image',
+      content: data?.product?.variants?.nodes?.at(0)?.image?.url,
+    },
+    {property: 'twitter:card', content: data?.product.title},
+    {property: 'twitter:title', content: data?.product.title},
+    {property: 'twitter:description', content: data?.product.description},
+    {property: 'twitter:creator', content: TWITTER_HANDLE},
+    {property: 'twitter:url', content: data?.canonicalUrl},
+    {
+      property: 'twitter:image',
+      content: data?.product?.variants?.nodes?.at(0)?.image?.url,
+    },
+    {
+      'script:ld+json': [
+        {
+          '@context': 'https://schema.org/',
+          '@type': 'Product',
+          name: data?.product.title,
+          image: data?.product?.variants?.nodes.map(
+            (variant: any) => variant?.image?.url,
+          ),
+          description: data?.product.description,
+          sku: data?.product.sku ?? data?.product.id,
+          brand: {
+            '@type': 'Brand',
+            name: data?.product.brand ?? 'Hydrogen Storefront',
+          },
+        },
+        breadcrumbsSchemaMarkup,
+      ],
+    },
+  ];
 };
 
 export async function loader(args: LoaderFunctionArgs) {
@@ -72,8 +123,24 @@ async function loadCriticalData({
     }
   }
 
+  const collection = product.collections.nodes.at(0);
+
+  const url = new URL(request.url);
+  const canonicalUrl = url.href.split('?').at(0);
+  const baseUrl = '${url.protocol)//${url.host}';
+  const breadcrumbs = getBreadcrumbs(
+    breadcrumbType,
+    {product, collection},
+    baseUrl,
+  );
+  const breadcrumbsSchemaMarkup = getBreadcrumbsSchemaMarkup(breadcrumbs);
+
   return {
     product,
+    collection,
+    canonicalUrl,
+    breadcrumbs,
+    breadcrumbsSchemaMarkup,
   };
 }
 
@@ -255,6 +322,12 @@ const PRODUCT_FRAGMENT = `#graphql
     seo {
       description
       title
+    }
+    collections(first:1) {
+      nodes {
+        title
+        handle
+      }
     }
   }
   ${PRODUCT_VARIANT_FRAGMENT}

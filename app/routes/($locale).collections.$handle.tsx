@@ -1,4 +1,4 @@
-import {defer, redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {defer, HeadersFunction, redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import {useLoaderData, Link, type MetaFunction} from '@remix-run/react';
 import {
   Pagination,
@@ -9,9 +9,61 @@ import {
 } from '@shopify/hydrogen';
 import type {ProductItemFragment} from 'storefrontapi.generated';
 import {useVariantUrl} from '~/lib/variants';
+import {
+  getBreadcrumbs,
+  getBreadcrumbsSchemaMarkup,
+  TBreadcrumbType,
+} from '~/utils/breadcrumbs';
+
+export const headers: HeadersFunction = ({
+  actionHeaders,
+  loaderHeaders,
+  parentHeaders,
+  errorHeaders,
+  }) => {
+  console.log({actionHeaders, loaderHeaders, parentHeaders, errorHeaders});
+
+  const headers = new Headers();
+  const usefulHeadersKeys = ['Link'];
+  usefulHeadersKeys.forEach((key) => {
+  headers.set(key, loaderHeaders.get(key)!);
+  });
+  return headers;
+  };
+
+const breadcrumbType: TBreadcrumbType = 'collection';
+export const handle = {breadcrumbType};
+
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
-  return [{title: `Hydrogen | ${data?.collection.title ?? ''} Collection`}];
+  return [
+    {title: `${data?.collection.title ?? ''} Collection | Store name`},
+    {name: `description`, content: data?.collection.description},
+    {tagName: 'link', rel: 'canonical', href: data?.canonicalUrl},
+    {content: 'width=device-width, initial-scale=1, viewport-fit=cover'},
+
+    {
+      name: "viewport",
+      content: "width=device-width, initial-scale=1, viewport-fit=cover" 
+    },
+    {
+      'script:ld+json': [
+        {
+          '@context': 'https://schema.org/',
+          '@type': 'Collection',
+          name: data?.collection.title,
+          description: data?.collection.description,
+          sku: data?.collection.id,
+          brand: {
+            '@type': 'Brand',
+            // name: data?.product.brand ?? 'Hydrogen Storefront',
+          },
+        },
+          data?.breadcrumbsSchemaMarkup
+      ],
+    }
+  ];
+  
 };
 
 export async function loader(args: LoaderFunctionArgs) {
@@ -21,7 +73,7 @@ export async function loader(args: LoaderFunctionArgs) {
   // Await the critical data required to render initial state of the page
   const criticalData = await loadCriticalData(args);
 
-  return defer({...deferredData, ...criticalData});
+  return defer({...deferredData, ...criticalData, canonicalUrl: criticalData.canonicalUrl });
 }
 
 /**
@@ -56,8 +108,22 @@ async function loadCriticalData({
     });
   }
 
+  const url = new URL(request.url);
+  const canonicalUrl = url.href;
+  const baseUrl = `${url.protocol}//${url.host}`;
+  const breadcrumbs = getBreadcrumbs(breadcrumbType, {}, baseUrl);
+  const breadcrumbsSchemaMarkup = getBreadcrumbsSchemaMarkup(breadcrumbs);
+  const headers = {
+    Link: `<${canonicalUrl}> rel="canonical"`,
+  };
+  
   return {
     collection,
+    canonicalUrl,
+    baseUrl,
+    breadcrumbs,
+    breadcrumbsSchemaMarkup,
+    headers
   };
 }
 

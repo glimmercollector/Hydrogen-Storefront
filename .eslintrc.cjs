@@ -3,9 +3,9 @@
  */
 module.exports = {
   extends: [
-    '@remix-run/eslint-config',
-    'plugin:hydrogen/recommended',
-    'plugin:hydrogen/typescript',
+    // '@remix-run/eslint-config',
+    // 'plugin:hydrogen/recommended',
+    // 'plugin:hydrogen/typescript',
   ],
   rules: {
     '@typescript-eslint/ban-ts-comment': 'off',

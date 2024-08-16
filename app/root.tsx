@@ -16,6 +16,8 @@ import resetStyles from '~/styles/reset.css?url';
 import appStyles from '~/styles/app.css?url';
 import {PageLayout} from '~/components/PageLayout';
 import {FOOTER_QUERY, HEADER_QUERY} from '~/lib/fragments';
+import tailwindStyles from '~/tailwind.css?url';
+import {removeTrailingSlash} from './utils/remove-trailing-slash';
 
 export type RootLoader = typeof loader;
 
@@ -44,6 +46,7 @@ export function links() {
   return [
     {rel: 'stylesheet', href: resetStyles},
     {rel: 'stylesheet', href: appStyles},
+    {rel: 'stylesheet', href: tailwindStyles},
     {
       rel: 'preconnect',
       href: 'https://cdn.shopify.com',
@@ -84,7 +87,9 @@ export async function loader(args: LoaderFunctionArgs) {
  * Load data necessary for rendering content above the fold. This is the critical data
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  */
-async function loadCriticalData({context}: LoaderFunctionArgs) {
+async function loadCriticalData({request, context}: LoaderFunctionArgs) {
+  removeTrailingSlash(new URL(request.url));
+
   const {storefront} = context;
 
   const [header] = await Promise.all([
