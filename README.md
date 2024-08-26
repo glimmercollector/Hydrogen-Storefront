@@ -46,3 +46,4 @@ Follow step 1 and 2 of <https://shopify.dev/docs/custom-storefronts/building-wit
 # hydrogen-storefront
 # Hydrogen-Storefront
 # Hydrogen-Storefront
+# glimmer-shopify-hydrogen-storefront
