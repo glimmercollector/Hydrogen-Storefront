@@ -110,8 +110,10 @@ function HeaderCtas({
             {(isLoggedIn) => (isLoggedIn ? 'Account' : 'Sign in')}
           </Await>
         </Suspense>
+    
       </NavLink>
       <SearchToggle />
+
       <CartToggle cart={cart} />
     </nav>
   );
